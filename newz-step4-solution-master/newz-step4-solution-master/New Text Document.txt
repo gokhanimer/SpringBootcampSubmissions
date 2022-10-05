@@ -1,0 +1,60 @@
+added this to the applications:
+
+	@Bean
+	public FilterRegistrationBean getFilter() {		
+		FilterRegistrationBean fbean=new FilterRegistrationBean();
+		fbean.setFilter(new NewsFilter());
+		fbean.addUrlPatterns("/news/addNews", "/news/deleteNews/{id}");
+		return fbean;
+	}
+-----------------------------------------------------------	
+added this filter class for the microservices:
+
+package com.stackroute.newz.filter;
+
+import java.io.IOException;
+
+import javax.servlet.FilterChain;
+import javax.servlet.GenericFilter;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwt;
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
+
+public class NewsFilter extends GenericFilter{
+
+	@Override
+	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+			throws IOException, ServletException {
+		HttpServletRequest req=(HttpServletRequest) request;
+		HttpServletResponse res =(HttpServletResponse) response;
+		
+		String header=req.getHeader("Authorization");
+
+		System.out.println(header);
+		if ((header==null ) || (!header.startsWith("Bearer"))) {		
+				throw new ServletException("Missing JWT Token");
+		}else{
+			String mytoken=header.substring(7);
+			try {
+				JwtParser jwtparser = Jwts.parser().setSigningKey("newz");
+				  	Jwt jwtobj = jwtparser.parse(mytoken);
+				  		Claims claimobj=(Claims) jwtobj.getBody();
+				  	System.out.println("Login credentials are :" + claimobj.getSubject());
+
+			}catch(Exception e) {
+					System.out.println(e.getMessage());
+						throw new ServletException("Token is invalid");
+			}
+		}		
+		chain.doFilter(req, res);
+	}
+}
+----------------------------------------------------------------
+added some required dependencies in the pom.xml file also
